@@ -1,7 +1,7 @@
 import os
 import sys
 
-path = "D:\\Python\\PyCharm\\WORKSPACE\\AllProjects\\ListKeeper v.2.0"
+path = "Enter a new path here"
 dirs = os.listdir(path)
 Files = []
 
