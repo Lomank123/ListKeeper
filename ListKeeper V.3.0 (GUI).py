@@ -1,6 +1,7 @@
 import os
 from tkinter import *
 from tkinter.filedialog import askdirectory
+from tkinter.messagebox import askyesno
 
 
 class API(Frame):
@@ -11,6 +12,7 @@ class API(Frame):
         self.parent.title('--ListKeeper--')
         self.parent.geometry('800x400')
         self.first(self.parent)
+        self.changes = False
 
     def first(self, parent):
         name = StringVar()
@@ -63,11 +65,15 @@ class API(Frame):
         Button(TL1, padx="10", pady="8", font="10", bg="red",
                text='Quit', command=TL1.destroy).place(x=420, y=125)
 
+        TL1.grab_set()
+        TL1.focus_set()
+        TL1.wait_window()
+
     def openf(self, lb, name):
         selection = name + "/{0}".format(lb.get(lb.curselection()[0]))
         self.readfile(selection, names=[])
 
-# Functions from Listkeeper V.2.0
+    # Functions from Listkeeper V.2.0
     def finder(self, dirr, files, path):
         for filename in dirr:
             if filename.endswith('.txt'):
@@ -84,13 +90,8 @@ class API(Frame):
     def printfunc(self, items):
         if not items:
             print('Empty file')
-        for number, name in enumerate(items):
-            if name == '':
-                continue
-            else:
-                print(number + 1, '.  ', name)
 
-# NEED TO CORRECT THIS
+    # NEED TO CORRECT THIS
     def addfilename(self, files):
         print('Enter a new filename:')
         filename = input('Input filename: ')
@@ -100,93 +101,98 @@ class API(Frame):
         self.filecreator(filename)
         self.printfunc(files)
 
-    def readfile(self, filename, names=[], change=False):
-        if not change:
-            if not names:
-                with open(filename, 'r+') as file:
-                    for line in file:
-                        names.append(line[4:])
+    def readfile(self, filename, names=[]):
+        if not names:
+            with open(filename, 'r+') as file:
+                for line in file:
+                    names.append(line[4:])
         self.printfunc(names)
-        self.openedf(names)
-        # menu(filename, names, change)
+        self.openedf(names, filename)
 
-    def openedf(self, names):
+    def openedf(self, names, filename):
         TL2 = Toplevel()
         TL2.geometry('600x400')
         TL2.title('--ListKeeper--')
-        listbox1 = Listbox(TL2)
+
+        listbox1 = Listbox(TL2, selectmode=EXTENDED)
         listbox1.configure(width=40, height=12)
         for name in names:
             listbox1.insert(END, name)
         listbox1.place(x=150, y=75)
+
+        self.changes = listbox1.get(0, END)
+
+        func = lambda: self.addfunc2(TL2, listbox1)
         Button(TL2, padx="10", pady="8", font="10", bg="pink",
-               text='Open').place(x=420, y=75)
+               text='Add', command=func).place(x=420, y=75)
+
+        func = lambda: self.quitfunc2(TL2, filename, listbox1, self.changes)
         Button(TL2, padx="10", pady="8", font="10", bg="red",
-               text='Quit', command=TL2.destroy).place(x=420, y=125)
+               text='Quit', command=func).place(x=420, y=125)
+
+        func = lambda: self.deletefunc2(listbox1.curselection(), listbox1)
         Button(TL2, padx="10", pady="8", font="10", bg="green",
-               text='Browse').place(x=420, y=175)
+               text='Delete', command=func).place(x=420, y=175)
+
+        func = lambda: self.savefunc2(filename, listbox1)
         Button(TL2, padx="10", pady="8", font="10", bg="yellow",
-               text='Browse').place(x=420, y=225)
-        # Button(TL1, padx="10", pady="8", font="10", bg="green",
-        # text='Browse').place(x=420, y=175)
-        # Button(TL1, padx="10", pady="8", font="10", bg="yellow",
-        # text='Browse').place(x=420, y=225)
+               text='Save', command=func).place(x=420, y=225)
+        Label(TL2, text="Your filename: {0} ".format(filename)).place(x=10, y=350)
+        TL2.grab_set()
+        TL2.focus_set()
+        TL2.wait_window()
 
-    def menu(self, filename, names, change1=False):
-        while True:
-            print('\nNow select one of these options\n'
-                  '[A]dd  [D]elete  [S]ave  [Q]uit')
-            answer = input('Input: ')
-            if answer not in ['q', 'd', 's', 'a']:
-                print('Try again')
-            else:
-                break
-        if answer == 'a':
-            self.addfunc(filename, names)
-        if answer == 'd':
-            self.deletefunc(filename, names)
-        if answer == 's':
-            self.savefunc(filename, names)
-        if answer == 'q':
-            self.quitfunc(filename, names, change1)
+    def addfunc2(self, parent, lb):
+        tladd = Toplevel(parent)
+        tladd.geometry('300x200')
+        tladd.title('--ListKeeper--')
+        name = StringVar()
+        dirname = Entry(tladd, width=30, textvariable=name)
+        dirname.place(x=20, y=20)
+        func = lambda : self.addsupp(tladd, lb, name)
+        btn = Button(tladd, padx="6", pady="6", font="6", bg="yellow",
+                     text='Add name', command=func).place(x=100, y=125)
 
-    def addfunc(self, file, names1):
-        answer = input('Enter a new name: ')
-        names1.append(answer + '\n')
-        print('Done! (Add)')
-        self.readfile(file, names1, True)
+        tladd.grab_set()
+        tladd.focus_set()
+        tladd.wait_window()
 
-    def deletefunc(self, file, names2):
-        print('Select a number ')
-        answer = input('Input number: ')
-        names2.pop(int(answer) - 1)
-        print('Done! (Delete)')
-        self.readfile(file, names2, True)
+    def addsupp(self, parent, lb, name):
+        if name:
+            lb.insert(END, name.get() + "\n")
+            print(lb.get(0, END))
+            parent.destroy()
+        else:
+            print("No name")
 
-    def savefunc(self, file, list1, mainfunc=True):
-        print('\nSaving...')
-        with open(file, 'w+') as savedfile:
-            for number, item in enumerate(list1):
-                savedfile.write('{0} : {1}'.format(number + 1, item))
-        print('Done! (Save)')
-        if mainfunc:
-            self.readfile(file, names=[])
+    def deletefunc2(self, indexes, lb):
+        if indexes:
+            check = askyesno("Delete or not", "Do you REALLY want to delete these notes?")
+            if check:
+                lb.delete(indexes[0], indexes[len(indexes)-1])
+        else:
+            print("You don't choose notes")
 
-    def quitfunc(self, file, real, changes=False):
-        if changes:
-            print('\nDo you want to save changes?\n')
-            while True:
-                answer = input('[Y]es  [N]o ')
-                if answer == 'y':
-                    self.savefunc(file, real, False)
-                    break
-                if answer == 'n':
-                    print('Undo changes...')
-                    break
-                else:
-                    print('Try again')
-        print('Exiting file... (Quit)')
-        self.printfunc(file)
+    def savefunc2(self, filename, lb, quitask=False):
+        if not quitask:
+            check = askyesno("Saving", "Do you want to save these notes?")
+            if check:
+                with open(filename, 'w+') as savedfile:
+                    for number, item in enumerate(lb.get(0, END)):
+                        savedfile.write('{0} : {1}'.format(number + 1, item))
+                self.changes = lb.get(0, END)
+        else:
+            check = askyesno("Quitting and Saving", "Oh, you quitting... Do you want to save changes?")
+            if check:
+                with open(filename, 'w+') as savedfile:
+                    for number, item in enumerate(lb.get(0, END)):
+                        savedfile.write('{0} : {1}'.format(number + 1, item))
+
+    def quitfunc2(self, parent, filename, lb, firstlist):
+        secondlist = lb.get(0, END)
+        if firstlist != secondlist:
+            self.savefunc2(filename, lb, quitask=True)
+        parent.destroy()
 
     def filecreator(self, filename, path):
         pathwithfile = path + '\\{0}'.format(filename)  # This part of code creates a new file in a current folder
