@@ -11,54 +11,47 @@ class API(Frame):
         self.parent = parent
         self.parent.title('--ListKeeper--')
         self.parent.geometry('800x400')
-        self.first(self.parent)
-        self.changes = False
 
-    def first(self, parent):
-        name = StringVar()
-        dirname = Entry(parent, width=50, textvariable=name)
-        dirname.place(x=100, y=100)
+        self.changes = False                       # for check if changes were made
+        self.name = StringVar()                    # stringVar for Entry field
+        self.Files = []                            # list for files
+        self.dirname = None                        # for path
 
-        func = lambda: self.Start(name)
-        btn1 = Button(self.parent, padx="20", pady="8", font="16", bg="green",
-                      text='Start', command=func)
-        btn1.place(x=450, y=310)
+        Entry(self.parent, width=50, textvariable=self.name).place(x=100, y=100)
 
-        btn2 = Button(self.parent, padx="20", pady="8", font="16",
-                      text='Quit', command=self.parent.quit)
-        btn2.place(x=270, y=310)
+        Button(self.parent, padx="20", pady="8", font="16", bg="green",
+               text='Start', command=self.start).place(x=450, y=310)
 
-        func = lambda: self.directory1(name)
-        btn3 = Button(self.parent, padx="10", pady="8", font="10", bg="green",
-                      text='Browse', command=func)
-        btn3.place(x=420, y=100)
+        Button(self.parent, padx="20", pady="8", font="16",
+               text='Quit', command=self.parent.quit).place(x=270, y=310)
 
-    def directory1(self, name1):
+        Button(self.parent, padx="10", pady="8", font="10", bg="green",
+               text='Browse', command=self.directory).place(x=420, y=100)
+
+    def directory(self):
         text = askdirectory()
         if text:
-            name1.set(text)
+            self.name.set(text)
 
-    def Start(self, dir1):
+    def start(self):
         TL1 = Toplevel()
         TL1.geometry('600x400')
         TL1.title('--ListKeeper--')
 
-        dirname = os.listdir(dir1.get())
-        Files = []
+        self.dirname = os.listdir(self.name.get())
+        self.Files = []
+        self.finder()
 
-        self.finder(dirname, Files, dir1.get())
-        self.printfunc(Files)
-
-        Label(TL1, text="Your directory: {0} ".format(dir1.get())).place(x=10, y=350)
+        Label(TL1, text="Your directory: {0} ".format(self.name.get())).place(x=10, y=350)
         Label(TL1, text="Here are filenames: ").place(x=150, y=50)
 
         listbox = Listbox(TL1)
-        listbox.configure(width=40, height=12)
-        for names in Files:
+        listbox.config(width=40, height=12)
+        for names in self.Files:
             listbox.insert(END, names)
         listbox.place(x=150, y=75)
 
-        func = lambda: self.openf(listbox, dir1.get())
+        func = lambda: self.openf(listbox)
         Button(TL1, padx="10", pady="8", font="10", bg="pink",
                text='Open', command=func).place(x=420, y=75)
 
@@ -69,44 +62,38 @@ class API(Frame):
         TL1.focus_set()
         TL1.wait_window()
 
-    def openf(self, lb, name):
-        selection = name + "/{0}".format(lb.get(lb.curselection()[0]))
+    def openf(self, lb):                   # Maybe rework this!!!
+        selection = self.name.get() + "/{0}".format(lb.get(lb.curselection()[0]))
         self.readfile(selection, names=[])
 
     # Functions from Listkeeper V.2.0
-    def finder(self, dirr, files, path):
-        for filename in dirr:
+    def finder(self):
+        for filename in self.dirname:
             if filename.endswith('.txt'):
-                files.append(filename)
-        if not files:
+                self.Files.append(filename)
+        if not self.Files:
             print("There are no files in this directory. \n"
                   "Creating a new one...")
             newfile = input("Please, enter a new filename: ")
             if not newfile.endswith('.txt'):
                 newfile += '.txt'
-            files.append(newfile)
-            self.filecreator(newfile, path)
-
-    def printfunc(self, items):
-        if not items:
-            print('Empty file')
+            self.Files.append(newfile)
+            self.filecreator(newfile, self.name.get())
 
     # NEED TO CORRECT THIS
-    def addfilename(self, files):
+    def addfilename(self, files, path):
         print('Enter a new filename:')
         filename = input('Input filename: ')
         if not filename.endswith('.txt'):
             filename += '.txt'
         files.append(filename)
-        self.filecreator(filename)
-        self.printfunc(files)
+        self.filecreator(filename, path)
 
     def readfile(self, filename, names=[]):
         if not names:
             with open(filename, 'r+') as file:
                 for line in file:
                     names.append(line[4:])
-        self.printfunc(names)
         self.openedf(names, filename)
 
     def openedf(self, names, filename):
@@ -149,7 +136,7 @@ class API(Frame):
         name = StringVar()
         dirname = Entry(tladd, width=30, textvariable=name)
         dirname.place(x=20, y=20)
-        func = lambda : self.addsupp(tladd, lb, name)
+        func = lambda: self.addsupp(tladd, lb, name)
         btn = Button(tladd, padx="6", pady="6", font="6", bg="yellow",
                      text='Add name', command=func).place(x=100, y=125)
 
@@ -160,7 +147,6 @@ class API(Frame):
     def addsupp(self, parent, lb, name):
         if name:
             lb.insert(END, name.get() + "\n")
-            print(lb.get(0, END))
             parent.destroy()
         else:
             print("No name")
@@ -169,7 +155,7 @@ class API(Frame):
         if indexes:
             check = askyesno("Delete or not", "Do you REALLY want to delete these notes?")
             if check:
-                lb.delete(indexes[0], indexes[len(indexes)-1])
+                lb.delete(indexes[0], indexes[len(indexes) - 1])
         else:
             print("You don't choose notes")
 
